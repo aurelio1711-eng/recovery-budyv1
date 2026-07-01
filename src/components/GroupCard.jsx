@@ -31,9 +31,16 @@ const GroupCard = memo(function GroupCard({ group, onCheckIn, onCheckOut, canChe
         {group.note && <span className="group-note">{group.note}</span>}
       </div>
 
-      {!isRecurring && group.required > 0 && (
+        {!isRecurring && group.required > 0 && (
         <div className="group-progress">
-          <div className="progress-bar-bg">
+          <div
+            className="progress-bar-bg"
+            role="progressbar"
+            aria-valuenow={progress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${group.name}: ${group.completed} of ${group.required} sessions (${progress}%)`}
+          >
             <motion.div
               className="progress-bar-fill"
               initial={{ width: 0 }}
@@ -72,6 +79,8 @@ const GroupCard = memo(function GroupCard({ group, onCheckIn, onCheckOut, canChe
           className="btn-checkin"
           onClick={onCheckIn}
           disabled={!canCheckIn && !isRecurring}
+          aria-disabled={!canCheckIn && !isRecurring}
+          title={!canCheckIn && !isRecurring ? `All ${group.required} required sessions completed` : undefined}
         >
           {isRecurring ? 'Attend Session' : isComplete ? 'Completed' : 'Check In'}
         </button>

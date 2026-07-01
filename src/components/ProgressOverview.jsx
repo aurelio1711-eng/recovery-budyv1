@@ -2,7 +2,6 @@ import { motion } from 'motion/react';
 import ProgressBar from './ProgressBar';
 import { CATEGORIES } from '../data/categories';
 
-// Shows per-category progress cards (Clinical, Mandatory, etc.) with animated bars
 export default function ProgressOverview({ groups }) {
   return (
     <motion.div
@@ -15,7 +14,36 @@ export default function ProgressOverview({ groups }) {
         const catGroups = groups.filter(g => g.category === cat.id);
         const required = catGroups.reduce((sum, g) => sum + (g.required || 0), 0);
         const completed = catGroups.reduce((sum, g) => sum + (g.completed || 0), 0);
+        const isRecurring = catGroups.every(g => g.recurring || g.required === 999);
         const pct = required > 0 ? Math.round((completed / required) * 100) : 0;
+
+        if (isRecurring) {
+          return (
+            <motion.div
+              key={cat.id}
+              className="progress-card counter-card"
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } },
+              }}
+            >
+              <div className="progress-card-header">
+                <span className="progress-label">{cat.label}</span>
+              </div>
+              <motion.span
+                className="counter-value"
+                key={completed}
+                initial={{ scale: 1.4 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 12 }}
+              >
+                {completed}
+              </motion.span>
+              <span className="counter-label">sessions attended</span>
+            </motion.div>
+          );
+        }
+
         return (
           <motion.div
             key={cat.id}

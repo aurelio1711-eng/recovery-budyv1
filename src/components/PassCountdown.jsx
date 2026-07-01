@@ -106,7 +106,14 @@ export default function PassCountdown({ refreshKey = 0 }) {
         </div>
 
           <div className="pass-progress">
-          <div className="pc-progress-bar-bg">
+          <div
+            className="pc-progress-bar-bg"
+            role="progressbar"
+            aria-valuenow={Math.round(getProgressValue())}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={getProgressLabel()}
+          >
             <div 
               className="pc-progress-bar-fill"
               style={{ 

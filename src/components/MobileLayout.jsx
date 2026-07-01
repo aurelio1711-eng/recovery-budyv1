@@ -163,7 +163,7 @@ export default function MobileLayout({
             className={`mobile-nav-btn ${activeTab === tab.id ? 'active' : ''}`}
             onClick={() => setActiveTab(tab.id)}
           >
-            <span className="mobile-nav-icon">{typeof tab.icon === 'function' ? <tab.icon /> : tab.icon}</span>
+            <span className="mobile-nav-icon" aria-hidden="true">{typeof tab.icon === 'function' ? <tab.icon /> : tab.icon}</span>
             <span className="mobile-nav-label">{tab.label}</span>
             {activeTab === tab.id && (
               <motion.div

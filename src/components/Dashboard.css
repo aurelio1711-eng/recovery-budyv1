@@ -143,6 +143,7 @@
   justify-content: center;
   transition: background 0.2s;
 }
+.welcome-dismiss:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .welcome-dismiss:hover { background: rgba(255,255,255,0.3); }
 
 /* ─── Pass Countdown ─── */
@@ -340,6 +341,7 @@
   font-family: var(--font-body);
 }
 
+.btn-change-start-date:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .btn-change-start-date:hover {
   background: var(--color-primary-dark);
   transform: translateY(-1px);
@@ -359,6 +361,7 @@
   font-family: var(--font-body);
 }
 
+.btn-reset-all:focus-visible { outline: 2px solid var(--color-danger); outline-offset: 2px; }
 .btn-reset-all:hover {
   background: var(--color-danger);
   color: #fff;
@@ -412,6 +415,7 @@
   background: var(--color-primary);
   color: #fff;
 }
+.btn-export:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .btn-export:hover { background: var(--color-primary-dark); }
 
 .btn-import {
@@ -419,6 +423,7 @@
   color: var(--color-success-dark);
   border: 1px solid var(--color-success);
 }
+.btn-import:focus-visible { outline: 2px solid var(--color-success); outline-offset: 2px; }
 .btn-import:hover { background: var(--color-success); color: #fff; }
 
 /* ─── Progress Overview ─── */
@@ -470,6 +475,28 @@
   display: block;
 }
 
+.counter-card {
+  text-align: center;
+}
+
+.counter-value {
+  font-family: var(--font-mono);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  display: block;
+  line-height: 1.1;
+}
+
+.counter-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.2rem;
+  display: block;
+}
+
 /* ─── Category Tabs ─── */
 .category-tabs {
   display: flex;
@@ -502,6 +529,8 @@
   color: var(--color-text-secondary);
   background: var(--color-hover-bg);
 }
+
+.category-tab:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
 .category-tab.active {
   color: #fff;
@@ -658,6 +687,7 @@
   background: var(--color-primary);
   color: #fff;
 }
+.btn-checkin:focus-visible { outline: 2px solid var(--color-primary-dark); outline-offset: 2px; }
 .btn-checkin:hover:not(:disabled) {
   background: var(--color-primary-dark);
   transform: translateY(-1px);
@@ -675,6 +705,7 @@
   border: 1px solid var(--color-border);
 }
 .btn-checkout:hover { background: var(--color-border); }
+.btn-checkout:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
 /* ─── Groups Section ─── */
 .groups-section {
@@ -750,6 +781,7 @@
   font-family: var(--font-body);
 }
 
+.checkin-undo-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .checkin-undo-btn:hover {
   background: var(--color-danger);
   color: #fff;
@@ -824,6 +856,7 @@
   font-family: var(--font-body);
 }
 
+.toast-undo-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .toast-undo-btn:hover { background: rgba(255,255,255,0.25); }
 
 /* ─── Modal ─── */
@@ -875,6 +908,7 @@
   justify-content: center;
   border-radius: var(--radius-sm);
 }
+.close-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .close-btn:hover { color: var(--color-text); background: var(--color-hover-bg); }
 
 .form-group {
@@ -935,12 +969,14 @@
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
 }
+.btn-cancel:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .btn-cancel:hover { background: var(--color-border); }
 
 .btn-submit {
   background: var(--color-primary);
   color: #fff;
 }
+.btn-submit:focus-visible { outline: 2px solid var(--color-primary-dark); outline-offset: 2px; }
 .btn-submit:hover {
   background: var(--color-primary-dark);
   transform: translateY(-1px);
@@ -1056,6 +1092,8 @@
   color: var(--color-text-muted);
   transition: color 0.2s;
 }
+
+.mobile-nav-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; border-radius: var(--radius-sm); }
 
 .mobile-nav-btn.active {
   color: var(--color-primary);

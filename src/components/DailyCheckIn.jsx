@@ -43,16 +43,18 @@ export default function DailyCheckIn({ group, onSubmit, onClose }) {
         </div>
         <div className="modal-body">
           <div className="form-group">
-            <label>Date</label>
+            <label htmlFor="checkin-date">Date</label>
             <input 
+              id="checkin-date"
               type="date" 
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             />
           </div>
           <div className="form-group">
-            <label>Notes (optional)</label>
+            <label htmlFor="checkin-notes">Notes (optional)</label>
             <textarea
+              id="checkin-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="How was your session? Notes..."

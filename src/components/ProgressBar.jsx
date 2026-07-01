@@ -4,7 +4,14 @@ import { motion } from 'motion/react';
 export default function ProgressBar({ value }) {
   const percentage = Math.min(100, Math.max(0, value));
   return (
-    <div className="progress-bar">
+    <div
+      className="progress-bar"
+      role="progressbar"
+      aria-valuenow={percentage}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`${percentage}% complete`}
+    >
       <motion.div
         className="progress-bar-inner"
         initial={{ width: 0 }}

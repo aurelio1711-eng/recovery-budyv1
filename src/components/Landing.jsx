@@ -12,7 +12,7 @@ const features = [
 
 export default function Landing({ onStart }) {
   return (
-    <motion.div
+    <motion.main
       className="landing"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -36,14 +36,16 @@ export default function Landing({ onStart }) {
           </p>
         </motion.div>
 
-        <motion.div
+        <motion.section
           className="landing-features"
+          aria-labelledby="features-heading"
           initial="hidden"
           animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.25 } } }}
         >
+          <h2 id="features-heading" className="sr-only">Key Features</h2>
           {features.map((f) => (
-            <motion.div
+            <motion.article
               key={f.title}
               className="landing-feature"
               variants={{
@@ -51,14 +53,14 @@ export default function Landing({ onStart }) {
                 visible: { opacity: 1, y: 0, transition: spring },
               }}
             >
-              <span className="landing-feature-icon">{f.icon}</span>
+              <span className="landing-feature-icon" aria-hidden="true">{f.icon}</span>
               <div>
                 <h3 className="landing-feature-title">{f.title}</h3>
                 <p className="landing-feature-desc">{f.desc}</p>
               </div>
-            </motion.div>
+            </motion.article>
           ))}
-        </motion.div>
+        </motion.section>
 
         <motion.button
           className="landing-start"
@@ -74,6 +76,7 @@ export default function Landing({ onStart }) {
 
         <motion.p
           className="landing-footer"
+          role="contentinfo"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7, duration: 0.3 }}
@@ -81,6 +84,6 @@ export default function Landing({ onStart }) {
           Your data stays on this device — nothing is uploaded
         </motion.p>
       </div>
-    </motion.div>
+    </motion.main>
   );
 }
