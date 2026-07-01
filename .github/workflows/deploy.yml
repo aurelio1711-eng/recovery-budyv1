@@ -14,14 +14,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
           cache: npm
 
       - run: npm ci
 
       - run: npm run build
 
-      - uses: amondnet/vercel-action@v25
+      - uses: vercel/actions/deploy@v1
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
