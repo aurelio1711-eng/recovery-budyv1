@@ -106,7 +106,7 @@ export const loadSettings = (): Settings => {
     if (data) {
       const parsed: Partial<Settings> = JSON.parse(data);
       const today = getToday();
-      const merged: Settings = { startDate: today, notifications: true, programStartDate: today, lastPassDate: null, passHistory: [], ...parsed };
+      const merged: Settings = { startDate: today, notifications: true, programStartDate: today, lastPassDate: null, passHistory: [], reminderTime: '09:00', reminderDays: [1, 2, 3, 4, 5, 6, 0], ...parsed };
       return merged;
     }
     return {
@@ -115,6 +115,8 @@ export const loadSettings = (): Settings => {
       programStartDate: getToday(),
       lastPassDate: null,
       passHistory: [],
+      reminderTime: '09:00',
+      reminderDays: [1, 2, 3, 4, 5, 6, 0],
     };
   } catch (e) {
     const today = getToday();
@@ -124,6 +126,8 @@ export const loadSettings = (): Settings => {
       programStartDate: today,
       lastPassDate: null,
       passHistory: [],
+      reminderTime: '09:00',
+      reminderDays: [1, 2, 3, 4, 5, 6, 0],
     };
   }
 };
@@ -137,6 +141,8 @@ export const saveSettings = (settings: Settings): boolean => {
       lastPassDate: settings.lastPassDate,
       passHistory: settings.passHistory || [],
       passHistoryLabels: settings.passHistoryLabels || [],
+      reminderTime: settings.reminderTime || '09:00',
+      reminderDays: settings.reminderDays || [1, 2, 3, 4, 5, 6, 0],
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalized));
     return true;
@@ -155,6 +161,7 @@ export const clearAllData = (): void => {
 export const updatePassStatus = (date: string = getToday()): Settings => {
   const settings = loadSettings();
   settings.lastPassDate = date;
+  settings.passHistory = [...(settings.passHistory || []), date];
   saveSettings(settings);
   return settings;
 };

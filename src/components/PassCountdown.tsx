@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { loadSettings, getDaysSinceProgramStart, getDaysUntilNextPass, getNextPassDate, isEligibleForPass, updatePassStatus } from '../services/storage';
 import { getToday } from '../services/nycTime';
 import type { Settings } from '../types';
-import './PassCountdown.css';
 
 interface Props {
   refreshKey?: number;
@@ -75,21 +74,21 @@ export default function PassCountdown({ refreshKey = 0 }: Props) {
   };
 
   return (
-    <div className="pass-countdown">
-      <div className="pass-countdown-header">
-        <h2>Weekend Pass Eligibility</h2>
-        <div 
-          className="eligibility-badge"
+    <div className="bg-surface rounded-[var(--radius-lg)] border border-border p-5 max-sm:p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-heading text-base font-semibold text-text">Weekend Pass Eligibility</h2>
+        <div
+          className="text-xs font-bold text-white px-3 py-1 rounded-full"
           style={{ backgroundColor: getStatusColor() }}
         >
           {eligible ? 'Eligible' : 'In Progress'}
         </div>
       </div>
 
-      <div className="pass-countdown-content">
-        <div className="days-counter">
-          <motion.span
-            className="days-number"
+      <div className="flex items-center gap-6 max-sm:flex-col max-sm:gap-4">
+        <div className="flex flex-col items-center shrink-0">
+          <m.span
+            className="text-4xl font-bold font-mono tabular-nums"
             key={daysSinceStart}
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -97,59 +96,59 @@ export default function PassCountdown({ refreshKey = 0 }: Props) {
             style={{ color: getStatusColor() }}
           >
             {daysSinceStart}
-          </motion.span>
-          <span className="days-label">Days in Program</span>
+          </m.span>
+          <span className="text-xs text-text-muted mt-0.5">Days in Program</span>
         </div>
 
-          <div className="pass-progress">
+        <div className="flex-1 w-full">
           <div
-            className="pc-progress-bar-bg"
+            className="h-2.5 bg-border rounded-full overflow-hidden"
             role="progressbar"
             aria-valuenow={Math.round(getProgressValue())}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label={getProgressLabel()}
           >
-            <div 
-              className="pc-progress-bar-fill"
-              style={{ 
+            <div
+              className="h-full rounded-full transition-[width] duration-500 ease-out"
+              style={{
                 width: `${Math.min(100, getProgressValue())}%`,
                 backgroundColor: getStatusColor()
               }}
-            ></div>
+            />
           </div>
-          <span className="pc-progress-text">
+          <span className="block text-xs text-text-muted mt-1.5">
             {getProgressLabel()}
           </span>
         </div>
 
         {eligible && nextPassDate && (
-          <div className="next-pass-info">
-            <div className="next-pass-date">
-              <span className="label">Next Pass Available:</span>
-              <span className="date">{nextPassDate}</span>
+          <div className="flex flex-col gap-1 text-xs shrink-0 max-sm:w-full">
+            <div className="flex gap-2">
+              <span className="text-text-muted">Next Pass Available:</span>
+              <span className="text-text font-semibold">{nextPassDate}</span>
             </div>
             {settings?.lastPassDate && (
-              <div className="last-pass-info">
-                <span className="label">Last Pass Date:</span>
-                <span className="date">{settings.lastPassDate}</span>
+              <div className="flex gap-2">
+                <span className="text-text-muted">Last Pass Date:</span>
+                <span className="text-text font-semibold">{settings.lastPassDate}</span>
               </div>
             )}
           </div>
         )}
       </div>
 
-      <div className="status-message" role="status">
+      <div className="mt-3 text-xs text-text-muted" role="status">
         {getStatusMessage()}
       </div>
 
       {eligible && daysUntilNextPass === 0 && !justClaimed && (
-        <button className="btn-claim-pass" onClick={handleClaimPass}>
+        <button className="mt-4 w-full font-heading text-sm font-semibold py-2.5 px-6 rounded-[var(--radius-md)] bg-primary text-white cursor-pointer border-none hover:bg-primary-dark transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2" onClick={handleClaimPass}>
           Claim Weekend Pass
         </button>
       )}
       {justClaimed && (
-        <button className="btn-claim-pass claimed" disabled>
+        <button className="mt-4 w-full font-heading text-sm font-semibold py-2.5 px-6 rounded-[var(--radius-md)] bg-primary-light text-text-muted border-none cursor-not-allowed opacity-60" disabled>
           Pass Claimed for Today
         </button>
       )}

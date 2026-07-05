@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import ProgressBar from './ProgressBar';
 import { CATEGORIES } from '../data/categories';
 import type { Group } from '../types';
@@ -9,8 +9,8 @@ interface Props {
 
 export default function ProgressOverview({ groups }: Props) {
   return (
-    <motion.div
-      className="progress-overview"
+    <m.div
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"
       initial="hidden"
       animate="visible"
       variants={{ visible: { transition: { staggerChildren: 0.08 } } }}
@@ -24,57 +24,57 @@ export default function ProgressOverview({ groups }: Props) {
 
         if (isRecurring) {
           return (
-            <motion.div
+            <m.div
               key={cat.id}
-              className="progress-card counter-card"
+              className="flex flex-col gap-1.5 bg-surface rounded-[var(--radius-md)] border border-border p-4"
               variants={{
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } },
               }}
             >
-              <div className="progress-card-header">
-                <span className="progress-label">{cat.label}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-text-secondary">{cat.label}</span>
               </div>
-              <motion.span
-                className="counter-value"
+              <m.span
+                className="text-3xl font-bold text-primary tabular-nums"
                 key={completed}
                 initial={{ scale: 1.4 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 12 }}
               >
                 {completed}
-              </motion.span>
-              <span className="counter-label">sessions attended</span>
-            </motion.div>
+              </m.span>
+              <span className="text-xs text-text-muted">sessions attended</span>
+            </m.div>
           );
         }
 
         return (
-          <motion.div
+          <m.div
             key={cat.id}
-            className="progress-card"
+            className="flex flex-col gap-2 bg-surface rounded-[var(--radius-md)] border border-border p-4"
             variants={{
               hidden: { opacity: 0, y: 20 },
               visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } },
             }}
           >
-            <div className="progress-card-header">
-              <span className="progress-label">{cat.label}</span>
-              <motion.span
-                className="progress-pct"
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-medium text-text-secondary">{cat.label}</span>
+              <m.span
+                className="text-sm font-bold tabular-nums"
                 key={pct}
                 initial={{ scale: 1.4, color: 'var(--color-secondary)' }}
                 animate={{ scale: 1, color: pct === 100 ? 'var(--color-primary)' : 'var(--color-secondary)' }}
                 transition={{ type: 'spring', stiffness: 200, damping: 12 }}
               >
                 {pct}%
-              </motion.span>
+              </m.span>
             </div>
             <ProgressBar value={pct} />
-            <span className="progress-detail">{completed} / {required}</span>
-          </motion.div>
+            <span className="text-xs text-text-muted tabular-nums">{completed} / {required}</span>
+          </m.div>
         );
       })}
-    </motion.div>
+    </m.div>
   );
 }

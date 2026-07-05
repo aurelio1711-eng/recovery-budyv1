@@ -1,6 +1,5 @@
 import StartDatePicker from './StartDatePicker';
 import ResetButton from './ResetButton';
-import './StartDateButton.css';
 
 interface StartDateButtonProps {
   onReset: () => void;
@@ -9,8 +8,8 @@ interface StartDateButtonProps {
 
 export default function StartDateButton({ onReset, onSettingsChange }: StartDateButtonProps) {
   return (
-    <div className="start-date-section">
-      <div className="start-date-card">
+    <div>
+      <div className="flex items-end gap-4 max-sm:flex-col max-sm:items-stretch">
         <StartDatePicker onSettingsChange={onSettingsChange} />
         <ResetButton onReset={onReset} />
       </div>

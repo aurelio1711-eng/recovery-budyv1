@@ -40,18 +40,18 @@ export default function ConfirmModal({ title, message, confirmLabel, cancelLabel
   }, [onCancel]);
 
   return (
-    <div ref={overlayRef} className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title" onClick={onCancel}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 id="confirm-title">{title}</h2>
-          <button className="close-btn" onClick={onCancel} aria-label="Close">&times;</button>
+    <div ref={overlayRef} className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-title" onClick={onCancel}>
+      <div className="bg-surface rounded-[var(--radius-lg)] border border-border w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 id="confirm-title" className="font-heading text-base font-semibold text-text">{title}</h2>
+          <button className="bg-transparent border-none text-2xl text-text-muted cursor-pointer hover:text-text leading-none p-1" onClick={onCancel} aria-label="Close">&times;</button>
         </div>
-        <div className="modal-body">
-          <p>{message}</p>
+        <div className="px-5 py-4">
+          <p className="text-sm text-text-secondary leading-relaxed">{message}</p>
         </div>
-        <div className="modal-footer">
-          <button className="btn-cancel" onClick={onCancel}>{cancelLabel || 'Cancel'}</button>
-          <button className={`btn-submit ${variant === 'danger' ? 'btn-danger' : ''}`} onClick={onConfirm}>
+        <div className="flex justify-end gap-3 px-5 py-4 border-t border-border">
+          <button className="text-sm font-semibold py-2 px-4 rounded-[var(--radius-sm)] bg-transparent border border-border text-text-secondary cursor-pointer hover:bg-hover-bg transition-colors duration-150" onClick={onCancel}>{cancelLabel || 'Cancel'}</button>
+          <button className={`text-sm font-semibold py-2 px-4 rounded-[var(--radius-sm)] text-white cursor-pointer border-none transition-colors duration-150 ${variant === 'danger' ? 'bg-danger hover:bg-danger-dark' : 'bg-primary hover:bg-primary-dark'}`} onClick={onConfirm}>
             {confirmLabel || 'Confirm'}
           </button>
         </div>

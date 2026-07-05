@@ -6,9 +6,11 @@ export interface Group {
   completed: number;
   recurring?: boolean;
   note?: string;
+  custom?: boolean;
+  time?: string;
 }
 
-export type GroupCategory = 'orientation' | 'clinical' | 'mandatory' | 'after30' | 'support';
+export type GroupCategory = 'orientation' | 'clinical' | 'mandatory' | 'after30' | 'support' | 'other';
 
 export interface Category {
   id: GroupCategory;
@@ -35,6 +37,8 @@ export interface Settings {
   lastPassDate: string | null;
   passHistory: string[];
   passHistoryLabels?: string[];
+  reminderTime: string;
+  reminderDays: number[];
 }
 
 export interface ExportData {
@@ -44,7 +48,7 @@ export interface ExportData {
   exportDate: string;
 }
 
-export type Page = 'dashboard' | 'review' | 'settings' | `groups-${string}`;
+export type Page = 'dashboard' | 'review' | 'settings' | 'calendar' | `groups-${string}`;
 
 export interface Toast {
   id: string;

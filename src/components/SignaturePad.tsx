@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 
 interface SignaturePadProps {
   onSave: (dataUrl: string) => void;
@@ -8,6 +8,20 @@ interface SignaturePadProps {
 export default function SignaturePad({ onSave, onClose }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  }, [onClose]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  }, [onClose]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -90,19 +104,30 @@ export default function SignaturePad({ onSave, onClose }: SignaturePadProps) {
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-        <div className="modal-header">
-          <h2>Get Signature</h2>
-          <button className="close-btn" onClick={onClose} aria-label="Close">&times;</button>
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 safe-area-inset-bottom"
+      role="dialog"
+      aria-modal="true"
+      onClick={handleOverlayClick}
+      onTouchStart={handleTouchStart}
+    >
+      <div
+        ref={contentRef}
+        className="bg-surface rounded-[var(--radius-lg)] border border-border w-full max-w-[500px] shadow-xl max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 className="font-heading text-base font-semibold text-text">Get Signature</h2>
+          <button className="bg-transparent border-none text-2xl text-text-muted cursor-pointer hover:text-text leading-none p-1" onClick={onClose} aria-label="Close">&times;</button>
         </div>
-        <div className="modal-body">
-          <p style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Please sign below:</p>
+        <div className="px-5 py-4">
+          <p className="mb-3 text-sm text-text-muted">Please sign below:</p>
           <canvas
             ref={canvasRef}
             width={400}
             height={150}
-            style={{ width: '100%', height: '150px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', cursor: 'crosshair', touchAction: 'none', background: '#fff' }}
+            className="w-full h-[150px] border border-border rounded-[var(--radius-sm)] cursor-crosshair touch-none bg-white"
             onMouseDown={startDrawing}
             onMouseMove={draw}
             onMouseUp={stopDrawing}
@@ -112,9 +137,9 @@ export default function SignaturePad({ onSave, onClose }: SignaturePadProps) {
             onTouchEnd={stopDrawing}
           />
         </div>
-        <div className="modal-footer">
-          <button className="btn-cancel" onClick={clear}>Clear</button>
-          <button className="btn-submit" onClick={handleSave}>Save Signature</button>
+        <div className="flex justify-end gap-3 px-5 py-4 border-t border-border">
+          <button className="text-sm font-semibold py-2 px-4 rounded-[var(--radius-sm)] bg-transparent border border-border text-text-secondary cursor-pointer hover:bg-hover-bg transition-colors duration-150 touch-target" onClick={clear}>Clear</button>
+          <button className="text-sm font-semibold py-2 px-4 rounded-[var(--radius-sm)] bg-primary text-white cursor-pointer border-none hover:bg-primary-dark transition-colors duration-150 touch-target" onClick={handleSave}>Save Signature</button>
         </div>
       </div>
     </div>

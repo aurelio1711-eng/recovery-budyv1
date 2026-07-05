@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { m, AnimatePresence } from 'motion/react';
 import { getAllGroups } from '../data/programData';
 import { loadProgram, saveProgram, addCheckIn, hasCheckIn, removeCheckIn, getCheckInsForDate, exportData, importData, validateImportData } from '../services/storage';
 import { initNycTime, getNycTimestamp, getLocalTimestamp, getToday } from '../services/nycTime';
+import { initializeNotifications } from '../services/notifications';
 import useMediaQuery from '../hooks/useMediaQuery';
 import type { Group, CheckIn, Toast, Page } from '../types';
 import DailyCheckIn from './DailyCheckIn';
@@ -14,7 +15,10 @@ import GroupsPage from './GroupsPage';
 import SettingsPage from './SettingsPage';
 import PerformanceReview from './PerformanceReview';
 import MobileLayout from './MobileLayout';
-import './Dashboard.css';
+import CalendarView from './CalendarView';
+import SearchModal from './SearchModal';
+import BulkCheckIn from './BulkCheckIn';
+import PrintableReport from './PrintableReport';
 
 interface DashboardProps {
   darkMode: boolean;
@@ -34,13 +38,26 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showWelcome, setShowWelcome] = useState(() => !loadProgram());
+  const [showSearch, setShowSearch] = useState(false);
+  const [showBulkCheckIn, setShowBulkCheckIn] = useState(false);
+  const [showPrintReport, setShowPrintReport] = useState(false);
+  const toastTimeouts = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    return () => {
+      toastTimeouts.current.forEach(tid => clearTimeout(tid));
+      toastTimeouts.current.clear();
+    };
+  }, []);
 
   const addToast = useCallback((message: string, undoHandler?: () => void) => {
     const id = crypto.randomUUID();
     setToasts(prev => [...prev, { id, message, undoHandler }]);
-    setTimeout(() => {
+    const tid = window.setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
+      toastTimeouts.current.delete(id);
     }, 4000);
+    toastTimeouts.current.set(id, tid);
   }, []);
 
   const loadTodayCheckIns = () => setTodayCheckIns(getCheckInsForDate());
@@ -56,6 +73,7 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
       setGroups(initial);
       saveProgram(initial);
     }
+    initializeNotifications();
   }, []);
 
   useEffect(() => {
@@ -147,7 +165,12 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
             addToast('Import failed: Invalid data format');
             return;
           }
-          importData(data);
+          try {
+            importData(data);
+          } catch {
+            addToast('Import failed: Unable to process data');
+            return;
+          }
           const saved = loadProgram();
           if (saved) {
             setGroups(saved);
@@ -193,6 +216,44 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
     setRefreshKey(k => k + 1);
   };
 
+  const handleBulkCheckIn = (selections: { groupId: string; date: string; notes: string }[]) => {
+    let newCount = 0;
+    selections.forEach(({ groupId, date, notes }) => {
+      const alreadyCheckedIn = hasCheckIn(groupId, date);
+      addCheckIn(groupId, date, notes, null);
+      if (!alreadyCheckedIn) newCount++;
+    });
+    if (newCount > 0) {
+      setGroups(prev => {
+        const updated = prev.map(g => {
+          const sel = selections.find(s => s.groupId === g.id);
+          if (sel && !hasCheckIn(g.id, sel.date)) {
+            return { ...g, completed: g.completed + 1 };
+          }
+          return g;
+        });
+        saveProgram(updated);
+        return updated;
+      });
+      addToast(`Checked in to ${newCount} group${newCount > 1 ? 's' : ''}`);
+    } else {
+      addToast('All selected groups already checked in for this date');
+    }
+    setShowBulkCheckIn(false);
+    loadTodayCheckIns();
+    setRefreshKey(k => k + 1);
+  };
+
+  const handleGroupAdd = (group: Group) => {
+    setGroups(prev => {
+      const updated = [...prev, group];
+      saveProgram(updated);
+      return updated;
+    });
+    setRefreshKey(k => k + 1);
+    addToast(`Added custom group: ${group.name}`);
+  };
+
   const totalRequired = useMemo(() => groups
     .filter(g => g.required !== 999)
     .reduce((sum, g) => sum + (g.required || 0), 0), [groups]);
@@ -208,6 +269,7 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
     onGroupCheckIn: (group: Group) => { setSelectedGroup(group); setShowCheckInModal(true); },
     onGroupCheckOut: handleCheckOut,
     canGroupCheckIn: (group: Group) => group.recurring || group.completed < group.required,
+    onGroupAdd: handleGroupAdd,
     refreshKey,
     nycTimeReady,
     nycTime,
@@ -222,67 +284,58 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
     onExport: handleExport,
     onImport: handleImport,
     onUndoCheckIn: handleUndoTodayCheckIn,
+    onSearch: () => setShowSearch(true),
+    onBulkCheckIn: () => setShowBulkCheckIn(true),
+    onPrintReport: () => setShowPrintReport(true),
   };
 
   if (isMobile) {
     const isOnDashboard = page === 'dashboard';
-
     return (
-      <motion.div className="mobile-layout" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
+      <m.div className="flex flex-col h-dvh" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
         <NavMenu groups={groups} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onNavigate={setPage} currentPage={page} darkMode={darkMode} onToggleDark={onToggleDark} />
         {isOnDashboard ? (
           <MobileLayout {...sharedProps} />
         ) : (
           <>
-            <header className="mobile-header">
-              <div className="mobile-header-top">
-                <h1 className="mobile-title">Recovery Buddy</h1>
-                <div className="mobile-header-right">
-                  <button className="checkin-undo-btn" onClick={() => setPage('dashboard')}>Back</button>
-                </div>
+            <header className="shrink-0 bg-surface border-b border-border px-4 py-3">
+              <div className="flex items-center justify-between">
+                <h1 className="font-heading text-base font-bold text-text">Recovery Buddy</h1>
+                <button className="text-xs font-semibold text-primary bg-transparent border-none cursor-pointer hover:text-primary-dark" onClick={() => setPage('dashboard')}>Back</button>
               </div>
             </header>
-            <main className="mobile-content">
+            <main className="flex-1 overflow-y-auto px-4 py-4">
               <AnimatePresence mode="wait">
                 {page.startsWith('groups-') && (
-                  <GroupsPage
-                    key={page}
-                    groups={groups}
-                    activeCategory={activeCategory}
-                    onCategoryChange={setActiveCategory}
-                    onGroupCheckIn={(group) => { setSelectedGroup(group); setShowCheckInModal(true); }}
-                    onGroupCheckOut={handleCheckOut}
-                    canGroupCheckIn={(group: Group) => group.recurring || group.completed < group.required}
-                  />
+                  <GroupsPage key={page} groups={groups} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onGroupCheckIn={(group) => { setSelectedGroup(group); setShowCheckInModal(true); }} onGroupCheckOut={handleCheckOut} canGroupCheckIn={(group: Group) => group.recurring || group.completed < group.required} onGroupAdd={handleGroupAdd} />
                 )}
                 {page === 'review' && (
-                  <PerformanceReview
-                    key="review"
-                    groups={groups}
-                  />
+                  <PerformanceReview key="review" groups={groups} refreshKey={refreshKey} />
+                )}
+                {page === 'calendar' && (
+                  <CalendarView key="calendar" refreshKey={refreshKey} />
                 )}
                 {page === 'settings' && (
-                  <SettingsPage
-                    key="settings"
-                    onExport={handleExport}
-                    onImport={handleImport}
-                    onReset={handleReset}
-                    onSettingsChange={handleSettingsChange}
-                  />
+                  <SettingsPage key="settings" onExport={handleExport} onImport={handleImport} onReset={handleReset} onSettingsChange={handleSettingsChange} />
                 )}
               </AnimatePresence>
             </main>
           </>
         )}
         {showCheckInModal && selectedGroup && (
-          <DailyCheckIn
-            group={selectedGroup}
-            onSubmit={handleCheckIn}
-            onClose={() => { setShowCheckInModal(false); setSelectedGroup(null); }}
-          />
+          <DailyCheckIn group={selectedGroup} onSubmit={handleCheckIn} onClose={() => { setShowCheckInModal(false); setSelectedGroup(null); }} />
         )}
         <ToastContainer toasts={toasts} onUndo={(t) => { t.undoHandler?.(); setToasts(prev => prev.filter(x => x.id !== t.id)); }} />
-      </motion.div>
+        {showSearch && (
+          <SearchModal groups={groups} onClose={() => setShowSearch(false)} onGroupSelect={(group) => { setSelectedGroup(group); setShowCheckInModal(true); }} />
+        )}
+        {showBulkCheckIn && (
+          <BulkCheckIn groups={groups} onSubmit={handleBulkCheckIn} onClose={() => setShowBulkCheckIn(false)} />
+        )}
+        {showPrintReport && (
+          <PrintableReport groups={groups} refreshKey={refreshKey} onClose={() => setShowPrintReport(false)} />
+        )}
+      </m.div>
     );
   }
 
@@ -290,141 +343,116 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
   const springSnap = { type: 'spring' as const, stiffness: 300, damping: 22 };
 
   return (
-    <motion.main className="dashboard" id="main-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+    <m.main className="pl-16 max-sm:pl-0" id="main-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       <NavMenu groups={groups} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onNavigate={setPage} currentPage={page} darkMode={darkMode} onToggleDark={onToggleDark} />
 
-      {showWelcome && (
-        <motion.div
-          className="welcome-card"
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={spring}
-        >
-          <h2>Welcome to Recovery Buddy</h2>
-          <p>Track your clinical and non-clinical group attendance. Check in to groups each session, earn certificates upon completion, and track your 30-day weekend pass eligibility.</p>
-          <button className="welcome-dismiss" onClick={() => setShowWelcome(false)} aria-label="Dismiss">&times;</button>
-        </motion.div>
-      )}
+      <div className="max-w-5xl mx-auto px-6 py-8 max-sm:px-4 max-sm:py-4">
+        {showWelcome && (
+          <m.div className="relative bg-primary-light border border-primary rounded-[var(--radius-md)] p-4 mb-6 pr-10" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={spring}>
+            <h2 className="font-heading text-sm font-bold text-primary-dark mb-1">Welcome to Recovery Buddy</h2>
+            <p className="text-xs text-text-secondary leading-relaxed">Track your clinical and non-clinical group attendance. Check in to groups each session, earn certificates upon completion, and track your 30-day weekend pass eligibility.</p>
+            <button className="absolute top-2 right-3 bg-transparent border-none text-lg text-primary cursor-pointer leading-none p-0 hover:text-primary-dark" onClick={() => setShowWelcome(false)} aria-label="Dismiss">&times;</button>
+          </m.div>
+        )}
 
-      <AnimatePresence mode="wait">
-        {page === 'dashboard' && (
-          <motion.div
-            key="dashboard"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={spring}
-          >
-            <motion.header
-              className="dashboard-header"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...spring, delay: 0.05 }}
-            >
-              <div className="header-content">
-                <h1>Recovery Buddy</h1>
-                <motion.div
-                  className="progress-ring"
-                  key={overallProgress}
-                  initial={{ scale: 0.85, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={springSnap}
-                  style={{ '--progress': `${overallProgress}%` } as React.CSSProperties}
-                >
-                  <motion.span
-                    className="progress-text"
-                    key={overallProgress}
-                    initial={{ y: 8, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={spring}
-                  >
-                    {overallProgress}%
-                  </motion.span>
-                </motion.div>
+        <AnimatePresence mode="wait">
+          {page === 'dashboard' && (
+            <m.div key="dashboard" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={spring}>
+              <m.header className="flex items-center justify-between mb-6" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: 0.05 }}>
+                <div className="flex items-center gap-4">
+                  <h1 className="font-heading text-2xl font-bold text-text">Recovery Buddy</h1>
+                  <m.div className="relative w-14 h-14" key={overallProgress} initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={springSnap}>
+                    <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
+                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--color-border)" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--color-primary)" strokeWidth="3" strokeDasharray={`${overallProgress} ${100 - overallProgress}`} strokeLinecap="round" />
+                    </svg>
+                    <m.span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-text tabular-nums" key={overallProgress} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={spring}>
+                      {overallProgress}%
+                    </m.span>
+                  </m.div>
+                </div>
+                <div className="flex items-center gap-3 text-right">
+                  <div className="flex items-center gap-1.5">
+                    <button className="text-xs font-semibold py-1.5 px-3 rounded-[var(--radius-sm)] border border-border bg-background text-text-secondary cursor-pointer hover:bg-hover-bg transition-colors duration-150 flex items-center gap-1.5" onClick={() => setShowSearch(true)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                      Search
+                    </button>
+                    <button className="text-xs font-semibold py-1.5 px-3 rounded-[var(--radius-sm)] border border-border bg-background text-text-secondary cursor-pointer hover:bg-hover-bg transition-colors duration-150 flex items-center gap-1.5" onClick={() => setShowBulkCheckIn(true)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Bulk Check-In
+                    </button>
+                    <button className="text-xs font-semibold py-1.5 px-3 rounded-[var(--radius-sm)] border border-border bg-background text-text-secondary cursor-pointer hover:bg-hover-bg transition-colors duration-150 flex items-center gap-1.5" onClick={() => setShowPrintReport(true)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      Print Report
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-[0.6rem] font-bold text-white px-1.5 py-0.5 rounded ${nycTimeReady ? 'bg-primary' : 'bg-warning'}`}>{nycTimeReady ? 'NYC' : 'Local'}</span>
+                    <span className="text-xs font-mono tabular-nums text-text-secondary">{localTime}</span>
+                    <span className="text-xs font-mono tabular-nums text-text-muted">{nycTime}</span>
+                  </div>
+                  <p className="text-xs text-text-muted tabular-nums">{totalCompleted} of {totalRequired} required sessions completed</p>
+                </div>
+              </m.header>
+
+              <div className="flex flex-col gap-6">
+                <PassCountdown refreshKey={refreshKey} />
+                <ProgressOverview groups={groups} />
+
+                {todayCheckIns.length > 0 ? (
+                  <section>
+                    <h2 className="font-heading text-base font-semibold text-text mb-3">Today&apos;s Check-Ins</h2>
+                    <ul className="flex flex-col gap-2">
+                      {todayCheckIns.map(ci => (
+                        <m.li key={`${ci.groupId}-${ci.date}`} className="flex items-center gap-3 bg-surface rounded-[var(--radius-md)] border border-border p-3" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={spring}>
+                          <span className="flex-1 font-medium text-sm text-text capitalize">{ci.groupId.replace(/-/g, ' ')}</span>
+                          <span className="text-xs tabular-nums text-text-muted">{new Date(ci.timestamp).toLocaleTimeString()}</span>
+                          {ci.notes && <span className="text-xs text-text-muted truncate max-w-[180px]">— {ci.notes}</span>}
+                          <button className="text-xs font-semibold text-primary bg-transparent border-none cursor-pointer hover:text-primary-dark" onClick={() => handleUndoTodayCheckIn(ci.groupId, ci.date)}>Undo</button>
+                        </m.li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : (
+                  <div className="text-sm text-text-muted text-center py-8">No check-ins recorded for today</div>
+                )}
               </div>
-              <div className="header-meta">
-                <span className={`time-badge ${nycTimeReady ? 'live' : 'fallback'}`}>
-                  {nycTimeReady ? 'NYC' : 'Local'}
-                </span>
-                <span className="clock-display">
-                  <span className="clock-local">{localTime}</span>
-                  <span className="clock-nyc">{nycTime}</span>
-                </span>
-                <p className="progress-summary">{totalCompleted} of {totalRequired} required sessions completed</p>
-              </div>
-            </motion.header>
+            </m.div>
+          )}
 
-            <PassCountdown refreshKey={refreshKey} />
+          {page.startsWith('groups-') && (
+            <GroupsPage key={page} groups={groups} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onGroupCheckIn={(group) => { setSelectedGroup(group); setShowCheckInModal(true); }} onGroupCheckOut={handleCheckOut} canGroupCheckIn={(group: Group) => group.recurring || group.completed < group.required} onGroupAdd={handleGroupAdd} />
+          )}
 
-            <ProgressOverview groups={groups} />
+          {page === 'review' && (
+            <PerformanceReview key="review" groups={groups} refreshKey={refreshKey} />
+          )}
 
-            {todayCheckIns.length > 0 ? (
-              <section className="today-checkins">
-                <h2>Today's Check-Ins</h2>
-                <ul className="checkin-list">
-                  {todayCheckIns.map(ci => (
-                    <motion.li
-                      key={`${ci.groupId}-${ci.date}`}
-                      className="checkin-item"
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={spring}
-                    >
-                      <span className="checkin-group">{ci.groupId.replace(/-/g, ' ')}</span>
-                      <span className="checkin-time">{new Date(ci.timestamp).toLocaleTimeString()}</span>
-                      {ci.notes && <span className="checkin-notes">— {ci.notes}</span>}
-                      <button className="checkin-undo-btn" onClick={() => handleUndoTodayCheckIn(ci.groupId, ci.date)}>Undo</button>
-                    </motion.li>
-                  ))}
-                </ul>
-              </section>
-            ) : (
-              <div className="today-empty">
-                No check-ins recorded for today
-              </div>
-            )}
-          </motion.div>
+          {page === 'calendar' && (
+            <CalendarView key="calendar" refreshKey={refreshKey} />
+          )}
+
+          {page === 'settings' && (
+            <SettingsPage key="settings" onExport={handleExport} onImport={handleImport} onReset={handleReset} onSettingsChange={handleSettingsChange} />
+          )}
+        </AnimatePresence>
+
+        {showCheckInModal && selectedGroup && (
+          <DailyCheckIn group={selectedGroup} onSubmit={handleCheckIn} onClose={() => { setShowCheckInModal(false); setSelectedGroup(null); }} />
         )}
 
-        {page.startsWith('groups-') && (
-          <GroupsPage
-            key={page}
-            groups={groups}
-            activeCategory={activeCategory}
-            onCategoryChange={setActiveCategory}
-            onGroupCheckIn={(group) => { setSelectedGroup(group); setShowCheckInModal(true); }}
-            onGroupCheckOut={handleCheckOut}
-            canGroupCheckIn={(group: Group) => group.recurring || group.completed < group.required}
-          />
+        <ToastContainer toasts={toasts} onUndo={(t) => { t.undoHandler?.(); setToasts(prev => prev.filter(x => x.id !== t.id)); }} />
+
+        {showSearch && (
+          <SearchModal groups={groups} onClose={() => setShowSearch(false)} onGroupSelect={(group) => { setSelectedGroup(group); setShowCheckInModal(true); }} />
         )}
-
-        {page === 'review' && (
-          <PerformanceReview
-            key="review"
-            groups={groups}
-          />
+        {showBulkCheckIn && (
+          <BulkCheckIn groups={groups} onSubmit={handleBulkCheckIn} onClose={() => setShowBulkCheckIn(false)} />
         )}
-
-        {page === 'settings' && (
-          <SettingsPage
-            key="settings"
-            onExport={handleExport}
-            onImport={handleImport}
-            onReset={handleReset}
-            onSettingsChange={handleSettingsChange}
-          />
+        {showPrintReport && (
+          <PrintableReport groups={groups} refreshKey={refreshKey} onClose={() => setShowPrintReport(false)} />
         )}
-      </AnimatePresence>
-
-      {showCheckInModal && selectedGroup && (
-        <DailyCheckIn
-          group={selectedGroup}
-          onSubmit={handleCheckIn}
-          onClose={() => { setShowCheckInModal(false); setSelectedGroup(null); }}
-        />
-      )}
-
-      <ToastContainer toasts={toasts} onUndo={(t) => { t.undoHandler?.(); setToasts(prev => prev.filter(x => x.id !== t.id)); }} />
-    </motion.main>
+      </div>
+    </m.main>
   );
 }
