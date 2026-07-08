@@ -1,9 +1,11 @@
 import { expect, test } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 
-test('renders program tracker title', () => {
+test('renders program tracker title', async () => {
   render(<App />);
-  const heading = screen.getByRole('heading', { level: 1, name: /Recovery Buddy/i });
-  expect(heading).toBeDefined();
+  await waitFor(() => {
+    const heading = screen.getByRole('heading', { level: 1, name: /Recovery Buddy/i });
+    expect(heading).toBeDefined();
+  });
 });

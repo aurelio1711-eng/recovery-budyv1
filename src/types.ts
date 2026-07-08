@@ -8,6 +8,8 @@ export interface Group {
   note?: string;
   custom?: boolean;
   time?: string;
+  sort_order?: number;
+  user_id?: string;
 }
 
 export type GroupCategory = 'orientation' | 'clinical' | 'mandatory' | 'after30' | 'support' | 'other';
@@ -19,11 +21,15 @@ export interface Category {
 }
 
 export interface CheckIn {
+  id?: string;
   groupId: string;
   date: string;
   notes: string;
   timestamp: number;
   signature: string | null;
+  signature_path?: string | null;
+  user_id?: string;
+  synced?: boolean;
 }
 
 export interface CheckInsRecord {
@@ -31,6 +37,7 @@ export interface CheckInsRecord {
 }
 
 export interface Settings {
+  id?: string;
   startDate: string;
   notifications: boolean;
   programStartDate: string;
@@ -39,6 +46,7 @@ export interface Settings {
   passHistoryLabels?: string[];
   reminderTime: string;
   reminderDays: number[];
+  user_id?: string;
 }
 
 export interface ExportData {

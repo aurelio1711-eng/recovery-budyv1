@@ -6,7 +6,7 @@ import { CATEGORIES } from '../data/categories';
 import { getToday } from '../services/nycTime';
 import type { Group, CheckIn, CategoryAnalytics, Settings } from '../types';
 
-const SPRING = { type: 'spring' as const, stiffness: 150, damping: 18, mass: 0.8 };
+const SPRING = { type: 'SPRING' as const, stiffness: 150, damping: 18, mass: 0.8 };
 
 function ReviewIcon() {
   return (
@@ -124,7 +124,7 @@ export default function PerformanceReview({ groups, refreshKey = 0 }: Performanc
             className="bg-surface rounded-[var(--radius-md)] border border-border p-4 flex flex-col"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 * i, ...spring }}
+            transition={{ delay: 0.05 * i, ...SPRING }}
           >
             <span className="text-2xl font-bold tabular-nums mb-1" style={{ color: 'color' in item ? item.color : undefined }}>
               {item.value}
@@ -143,7 +143,7 @@ export default function PerformanceReview({ groups, refreshKey = 0 }: Performanc
               className="bg-surface rounded-[var(--radius-md)] border border-border p-4"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * i, ...spring }}
+              transition={{ delay: 0.05 * i, ...SPRING }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-text">{cat.label}</span>
@@ -262,7 +262,7 @@ export default function PerformanceReview({ groups, refreshKey = 0 }: Performanc
                 className="grid grid-cols-[1fr_1fr_80px] py-2 px-3 text-sm border-t border-border items-center"
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.02 * i, ...spring }}
+                transition={{ delay: 0.02 * i, ...SPRING }}
               >
                 <span className="text-text-muted text-xs">{ci.date}</span>
                 <span className="text-text">{groupMap[ci.groupId] || ci.groupId.replace(/-/g, ' ')}</span>
@@ -294,7 +294,7 @@ export default function PerformanceReview({ groups, refreshKey = 0 }: Performanc
                 className="grid grid-cols-[1fr_1fr_1fr] py-2 px-3 text-sm border-t border-border"
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.02 * i, ...spring }}
+                transition={{ delay: 0.02 * i, ...SPRING }}
               >
                 <span className="text-text">{ci.groupId.replace(/-/g, ' ')}</span>
                 <span className="text-text-muted text-xs">{ci.date}</span>

@@ -11,7 +11,11 @@ export const initNycTime = async (): Promise<boolean> => {
     initialized = true;
     return true;
   } catch (e) {
+    if (e instanceof Error && e.message.startsWith('API key not configured')) {
+    console.warn('NYC time: API key not set, using local clock');
+  } else {
     console.error('Failed to init NYC time, falling back to local clock:', e);
+  }
     initialized = false;
     return false;
   }

@@ -1,15 +1,17 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { Analytics } from '@vercel/analytics/react';
-import { FlagValues } from '@vercel/flags/react';
 import { LazyMotion, m, domAnimation, MotionConfig, AnimatePresence } from 'motion/react';
 import ErrorBoundary from './components/ErrorBoundary';
 import Landing from './components/Landing';
-import { flags } from './flags';
+import LoginPage from './components/LoginPage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 
-function App() {
-  const [showDashboard, setShowDashboard] = useState<boolean>(false);
+function AppContent() {
+  const { user, loading } = useAuth();
+  const [appStage, setAppStage] = useState<'landing' | 'auth' | 'dashboard'>(() => {
+    return user ? 'dashboard' : 'landing';
+  });
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark');
@@ -21,12 +23,46 @@ function App() {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
+  useEffect(() => {
+    if (user && appStage === 'landing') {
+      setAppStage('dashboard');
+    }
+  }, [user, appStage]);
+
+  const handleStart = () => {
+    if (user) {
+      setAppStage('dashboard');
+    } else {
+      setAppStage('auth');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-dvh bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const showDashboard = appStage === 'dashboard' || !!user;
+
   return (
     <ErrorBoundary>
       <LazyMotion features={domAnimation}>
         <MotionConfig reducedMotion="user">
           <AnimatePresence mode="wait">
-            {showDashboard ? (
+            {appStage === 'auth' && !user ? (
+              <m.div
+                key="login"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
+                <LoginPage onSkip={() => setAppStage('dashboard')} />
+              </m.div>
+            ) : showDashboard ? (
               <m.div
                 key="dashboard"
                 initial={{ opacity: 0, y: 12 }}
@@ -34,7 +70,7 @@ function App() {
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
               >
-                <Suspense fallback={<div className="landing" style={{ minHeight: '100dvh' }} />}>
+                <Suspense fallback={<div className="min-h-dvh bg-background" />}>
                   <Dashboard darkMode={darkMode} onToggleDark={() => setDarkMode(v => !v)} />
                 </Suspense>
               </m.div>
@@ -46,17 +82,23 @@ function App() {
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
               >
-                <Landing onStart={() => setShowDashboard(true)} />
+                <Landing onStart={handleStart} />
               </m.div>
             )}
           </AnimatePresence>
         </MotionConfig>
       </LazyMotion>
 
-      <Analytics />
-      <FlagValues values={flags} />
       <div className="dev-banner safe-area-inset-bottom">This site is still in development</div>
     </ErrorBoundary>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

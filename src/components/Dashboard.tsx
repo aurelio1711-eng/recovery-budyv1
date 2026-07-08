@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { m, AnimatePresence } from 'motion/react';
 import { getAllGroups } from '../data/programData';
-import { loadProgram, saveProgram, addCheckIn, hasCheckIn, removeCheckIn, getCheckInsForDate, exportData, importData, validateImportData } from '../services/storage';
+import { loadProgram, saveProgram, addCheckIn, hasCheckIn, removeCheckIn, getCheckInsForDate, exportData, importData, validateImportData } from '../services/storageProvider';
+import { flushSyncQueue, hasPendingSync, getQueueLength } from '../services/syncService';
 import { initNycTime, getNycTimestamp, getLocalTimestamp, getToday } from '../services/nycTime';
 import { initializeNotifications } from '../services/notifications';
+import { useAuth } from '../contexts/AuthContext';
 import useMediaQuery from '../hooks/useMediaQuery';
 import type { Group, CheckIn, Toast, Page } from '../types';
 import DailyCheckIn from './DailyCheckIn';
@@ -19,6 +21,8 @@ import CalendarView from './CalendarView';
 import SearchModal from './SearchModal';
 import BulkCheckIn from './BulkCheckIn';
 import PrintableReport from './PrintableReport';
+import AccountMenu from './AccountMenu';
+import DataImportModal from './DataImportModal';
 
 const SPRING = { type: 'spring' as const, stiffness: 150, damping: 18, mass: 0.8 };
 const SPRING_SNAP = { type: 'spring' as const, stiffness: 300, damping: 22 };
@@ -29,6 +33,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
+  const { user } = useAuth();
   const [page, setPage] = useState<Page>('dashboard');
   const [groups, setGroups] = useState<Group[]>(() => {
     const saved = loadProgram();
@@ -47,6 +52,8 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [showBulkCheckIn, setShowBulkCheckIn] = useState(false);
   const [showPrintReport, setShowPrintReport] = useState(false);
+  const [showDataImport, setShowDataImport] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const toastTimeouts = useRef<Map<string, number>>(new Map<string, number>());
 
   useEffect(() => {
@@ -55,6 +62,31 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
       toastTimeouts.current.clear();
     };
   }, []);
+
+  // ── Online / offline detection ──
+  useEffect(() => {
+    const handleOnline = () => { setIsOnline(true); flushSyncQueue(); };
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // ── Show data import on first authed load if local data exists ──
+  useEffect(() => {
+    if (user) {
+      const localProg = localStorage.getItem('clinical-program-tracker');
+      const localChecks = localStorage.getItem('clinical-program-checkins');
+      const cloudImported = sessionStorage.getItem('cloud-import-shown');
+      if ((localProg || localChecks) && !cloudImported) {
+        setShowDataImport(true);
+        sessionStorage.setItem('cloud-import-shown', 'true');
+      }
+    }
+  }, [user]);
 
   const addToast = useCallback((message: string, undoHandler?: () => void) => {
     const id = crypto.randomUUID();
@@ -263,6 +295,29 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
 
   const isMobile = useMediaQuery('(max-width: 768px)');
 
+  const syncIndicator = (
+    <div className="flex items-center gap-1.5">
+      {user && (
+        <>
+          {isOnline ? (
+            <span className="text-[10px] text-primary" title="Connected">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+            </span>
+          ) : (
+            <span className="text-[10px] text-warning" title="Offline">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+            </span>
+          )}
+          {hasPendingSync() && (
+            <span className="text-[10px] text-warning font-semibold" title={`${getQueueLength()} pending`}>
+              {getQueueLength()}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+
   const sharedProps = {
     groups,
     activeCategory,
@@ -302,7 +357,11 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
             <header className="shrink-0 bg-surface border-b border-border px-4 py-3">
               <div className="flex items-center justify-between">
                 <h1 className="font-heading text-base font-bold text-text">Recovery Buddy</h1>
-                <button type="button" className="text-xs font-semibold text-primary bg-transparent border-none cursor-pointer hover:text-primary-dark" onClick={() => setPage('dashboard')}>Back</button>
+                <div className="flex items-center gap-2">
+                  {syncIndicator}
+                  <AccountMenu onImportComplete={() => { setShowDataImport(false); addToast('Data imported successfully'); }} />
+                  <button type="button" className="text-xs font-semibold text-primary bg-transparent border-none cursor-pointer hover:text-primary-dark" onClick={() => setPage('dashboard')}>Back</button>
+                </div>
               </div>
             </header>
             <main className="flex-1 overflow-y-auto px-4 py-4">
@@ -335,6 +394,12 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
         )}
         {showPrintReport && (
           <PrintableReport groups={groups} refreshKey={refreshKey} onClose={() => setShowPrintReport(false)} />
+        )}
+        {showDataImport && user && (
+          <DataImportModal
+            onClose={() => setShowDataImport(false)}
+            onComplete={() => { setShowDataImport(false); addToast('Data synced to cloud'); }}
+          />
         )}
       </m.div>
     );
@@ -383,11 +448,13 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                       Print Report
                     </button>
+                    {user && <AccountMenu onImportComplete={() => { setShowDataImport(false); addToast('Data imported successfully'); }} />}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className={`text-[0.6rem] font-bold text-white px-1.5 py-0.5 rounded ${nycTimeReady ? 'bg-primary' : 'bg-warning'}`}>{nycTimeReady ? 'NYC' : 'Local'}</span>
                     <span className="text-xs font-mono tabular-nums text-text-secondary">{localTime}</span>
                     <span className="text-xs font-mono tabular-nums text-text-muted">{nycTime}</span>
+                    {syncIndicator}
                   </div>
                   <p className="text-xs text-text-muted tabular-nums">{totalCompleted} of {totalRequired} required sessions completed</p>
                 </div>
@@ -449,6 +516,12 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
         )}
         {showPrintReport && (
           <PrintableReport groups={groups} refreshKey={refreshKey} onClose={() => setShowPrintReport(false)} />
+        )}
+        {showDataImport && user && (
+          <DataImportModal
+            onClose={() => setShowDataImport(false)}
+            onComplete={() => { setShowDataImport(false); addToast('Data synced to cloud'); }}
+          />
         )}
       </div>
     </m.main>

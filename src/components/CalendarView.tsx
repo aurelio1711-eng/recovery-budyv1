@@ -166,7 +166,7 @@ export default function CalendarView({ refreshKey = 0 }: CalendarViewProps) {
                   className="flex items-center gap-3 bg-background rounded-[var(--radius-sm)] border border-border p-3"
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.03 * i, ...spring }}
+                  transition={{ delay: 0.03 * i, ...SPRING }}
                 >
                   <span className="flex-1 font-medium text-sm text-text capitalize">{ci.groupId.replace(/-/g, ' ')}</span>
                   <span className="text-xs tabular-nums text-text-muted">{new Date(ci.timestamp).toLocaleTimeString()}</span>
