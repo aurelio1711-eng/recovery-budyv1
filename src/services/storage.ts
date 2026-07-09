@@ -1,13 +1,21 @@
 import { getToday } from './nycTime';
 import { parseISO, differenceInDays, addDays, format, isAfter, startOfWeek, endOfWeek } from 'date-fns';
 import type { Group, CheckIn, CheckInsRecord, Settings, ExportData, ImportValidation } from '../types';
+import { PROGRAM_VERSION } from '../data/programData';
 
 const STORAGE_KEY = 'clinical-program-tracker';
 const CHECKINS_KEY = 'clinical-program-checkins';
 const SETTINGS_KEY = 'clinical-program-settings';
+const PROGRAM_VERSION_KEY = 'program-version';
 
 export const loadProgram = (): Group[] | null => {
   try {
+    const version = localStorage.getItem(PROGRAM_VERSION_KEY);
+    if (version !== String(PROGRAM_VERSION)) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(PROGRAM_VERSION_KEY, String(PROGRAM_VERSION));
+      return null;
+    }
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) return JSON.parse(data);
     return null;
@@ -20,6 +28,7 @@ export const loadProgram = (): Group[] | null => {
 export const saveProgram = (groups: Group[]): boolean => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
+    localStorage.setItem(PROGRAM_VERSION_KEY, String(PROGRAM_VERSION));
     return true;
   } catch (e) {
     console.error('Failed to save program:', e);

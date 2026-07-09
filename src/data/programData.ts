@@ -1,5 +1,7 @@
 import { Group } from '../types';
 
+export const PROGRAM_VERSION = 2;
+
 const ORIENTATION_GROUPS: Group[] = [
   { id: 'orientation', name: 'Orientation', required: 12, category: 'orientation', completed: 0 },
 ];
