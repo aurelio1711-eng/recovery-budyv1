@@ -9,6 +9,7 @@ interface SyncQueueItem {
   payload: unknown;
   timestamp: number;
   retries: number;
+  nextAttempt?: number;
 }
 
 function getQueue(): SyncQueueItem[] {
@@ -28,9 +29,9 @@ function saveQueue(queue: SyncQueueItem[]): void {
   }
 }
 
-function enqueue(item: Omit<SyncQueueItem, 'id' | 'timestamp' | 'retries'>): void {
+function enqueue(item: Omit<SyncQueueItem, 'id' | 'timestamp' | 'retries' | 'nextAttempt'>): void {
   const queue = getQueue();
-  queue.push({ ...item, id: crypto.randomUUID(), timestamp: Date.now(), retries: 0 });
+  queue.push({ ...item, id: crypto.randomUUID(), timestamp: Date.now(), retries: 0, nextAttempt: Date.now() });
   saveQueue(queue);
 }
 
@@ -40,6 +41,14 @@ function dequeue(id: string): void {
 }
 
 const MAX_RETRIES = 5;
+const BASE_RETRY_DELAY = 1000; // 1s
+const MAX_RETRY_DELAY = 60 * 1000; // 60s
+
+function computeBackoff(retries: number) {
+  const exp = Math.min(MAX_RETRY_DELAY, BASE_RETRY_DELAY * 2 ** retries);
+  const jitter = Math.floor(Math.random() * 1000);
+  return exp + jitter;
+}
 
 async function processItem(item: SyncQueueItem): Promise<boolean> {
   const { userId, type, payload } = item;
@@ -47,40 +56,66 @@ async function processItem(item: SyncQueueItem): Promise<boolean> {
   try {
     switch (type) {
       case 'saveProgram':
-        return !!(await cloud.saveProgram(userId, payload as Parameters<typeof cloud.saveProgram>[1]));
+        await cloud.saveProgram(userId, payload as Parameters<typeof cloud.saveProgram>[1]);
+        return true;
       case 'addCheckIn': {
         const p = payload as { groupId: string; date: string; notes: string; timestamp: number; signature: string | null };
-        return !!(await cloud.addCheckIn(userId, p.groupId, p.date, p.notes, p.timestamp, p.signature));
+        await cloud.addCheckIn(userId, p.groupId, p.date, p.notes, p.timestamp, p.signature);
+        return true;
       }
       case 'removeCheckIn': {
         const p = payload as { groupId: string; date: string };
-        return !!(await cloud.removeCheckIn(userId, p.groupId, p.date));
+        await cloud.removeCheckIn(userId, p.groupId, p.date);
+        return true;
       }
       case 'saveSettings':
-        return !!(await cloud.saveSettings(userId, payload as Parameters<typeof cloud.saveSettings>[1]));
+        await cloud.saveSettings(userId, payload as Parameters<typeof cloud.saveSettings>[1]);
+        return true;
       default:
         return false;
     }
-  } catch {
+  } catch (err) {
+    // Log full error for diagnostics
+    // eslint-disable-next-line no-console
+    console.error('SyncService: failed to process item', { item, error: err });
     return false;
   }
 }
 
-export async function flushSyncQueue(): Promise<void> {
-  const queue = getQueue();
-  if (queue.length === 0) return;
+let flushing = false;
 
-  for (const item of queue) {
-    const success = await processItem(item);
-    if (success) {
-      dequeue(item.id);
-    } else if (item.retries >= MAX_RETRIES) {
-      console.warn(`Sync item ${item.id} exceeded max retries, dropping`);
-      dequeue(item.id);
-    } else {
+export async function flushSyncQueue(): Promise<void> {
+  if (flushing) return;
+  flushing = true;
+  try {
+    const now = Date.now();
+    const queue = getQueue();
+    if (queue.length === 0) return;
+
+    for (const item of queue) {
+      if (item.nextAttempt && item.nextAttempt > now) continue; // not due yet
+
+      const success = await processItem(item);
+      if (success) {
+        dequeue(item.id);
+        continue;
+      }
+
+      // failed
+      if (item.retries >= MAX_RETRIES) {
+        console.warn(`Sync item ${item.id} exceeded max retries, dropping`);
+        dequeue(item.id);
+        continue;
+      }
+
+      // schedule next attempt with exponential backoff + jitter
       item.retries++;
-      saveQueue(getQueue().map((q) => (q.id === item.id ? item : q)));
+      item.nextAttempt = Date.now() + computeBackoff(item.retries);
+      const updated = getQueue().map((q) => (q.id === item.id ? item : q));
+      saveQueue(updated);
     }
+  } finally {
+    flushing = false;
   }
 }
 

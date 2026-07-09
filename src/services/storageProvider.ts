@@ -29,8 +29,10 @@ export function loadProgram(): Group[] | null {
 export function saveProgram(groups: Group[]): boolean {
   const ok = local.saveProgram(groups);
   if (ok && syncEnabled && currentUserId) {
-    cloud.saveProgram(currentUserId, groups).catch(() => {
-      enqueueForSync(currentUserId!, 'saveProgram', groups);
+    const uid = currentUserId;
+    cloud.saveProgram(uid, groups).catch((error) => {
+      console.error('StorageProvider: saveProgram failed, enqueueing sync', error);
+      enqueueForSync(uid, 'saveProgram', groups);
     });
   }
   return ok;
@@ -46,8 +48,10 @@ export function addCheckIn(
 ): CheckIn {
   const checkIn = local.addCheckIn(groupId, date, notes, signature);
   if (syncEnabled && currentUserId) {
-    cloud.addCheckIn(currentUserId, groupId, date, notes, checkIn.timestamp, signature).catch(() => {
-      enqueueForSync(currentUserId!, 'addCheckIn', { groupId, date, notes, timestamp: checkIn.timestamp, signature });
+    const uid = currentUserId;
+    cloud.addCheckIn(uid, groupId, date, notes, checkIn.timestamp, signature).catch((error) => {
+      console.error('StorageProvider: addCheckIn failed, enqueueing sync', error);
+      enqueueForSync(uid, 'addCheckIn', { groupId, date, notes, timestamp: checkIn.timestamp, signature });
     });
   }
   return checkIn;
@@ -56,8 +60,10 @@ export function addCheckIn(
 export function removeCheckIn(groupId: string, date: string = getToday()): void {
   local.removeCheckIn(groupId, date);
   if (syncEnabled && currentUserId) {
-    cloud.removeCheckIn(currentUserId, groupId, date).catch(() => {
-      enqueueForSync(currentUserId!, 'removeCheckIn', { groupId, date });
+    const uid = currentUserId;
+    cloud.removeCheckIn(uid, groupId, date).catch((error) => {
+      console.error('StorageProvider: removeCheckIn failed, enqueueing sync', error);
+      enqueueForSync(uid, 'removeCheckIn', { groupId, date });
     });
   }
 }
@@ -79,8 +85,10 @@ export function loadSettings(): Settings {
 export function saveSettings(settings: Settings): boolean {
   const ok = local.saveSettings(settings);
   if (ok && syncEnabled && currentUserId) {
-    cloud.saveSettings(currentUserId, settings).catch(() => {
-      enqueueForSync(currentUserId!, 'saveSettings', settings);
+    const uid = currentUserId;
+    cloud.saveSettings(uid, settings).catch((error) => {
+      console.error('StorageProvider: saveSettings failed, enqueueing sync', error);
+      enqueueForSync(uid, 'saveSettings', settings);
     });
   }
   return ok;
@@ -89,8 +97,10 @@ export function saveSettings(settings: Settings): boolean {
 export function updatePassStatus(date: string = getToday()): Settings {
   const s = local.updatePassStatus(date);
   if (syncEnabled && currentUserId) {
-    cloud.saveSettings(currentUserId, s).catch(() => {
-      enqueueForSync(currentUserId!, 'saveSettings', s);
+    const uid = currentUserId;
+    cloud.saveSettings(uid, s).catch((error) => {
+      console.error('StorageProvider: updatePassStatus failed, enqueueing sync', error);
+      enqueueForSync(uid, 'saveSettings', s);
     });
   }
   return s;

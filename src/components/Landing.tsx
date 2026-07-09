@@ -87,7 +87,6 @@ export default function Landing({ onStart }: Props) {
 
         <m.p
           className="text-xs text-slate-600 leading-relaxed"
-          role="contentinfo"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7, duration: 0.3 }}

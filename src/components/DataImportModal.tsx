@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getHasCloudData, pushToCloud, pullFromCloud } from '../services/storageProvider';
+
+const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 interface DataImportModalProps {
   onClose: () => void;
@@ -13,32 +15,65 @@ export default function DataImportModal({ onClose, onComplete }: DataImportModal
   const [message, setMessage] = useState('');
   const [hasLocal, setHasLocal] = useState(false);
   const [hasCloud, setHasCloud] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const lastFocused = useRef<HTMLElement | null>(null);
 
-  useState(() => {
+  useEffect(() => {
+    if (step === 'done' || step === 'check') return;
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    lastFocused.current = document.activeElement as HTMLElement;
+    const focusable = overlay.querySelectorAll<HTMLElement>(FOCUSABLE);
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    first?.focus();
+
+    const trap = (e: Event) => {
+      const ke = e as KeyboardEvent;
+      if (ke.key === 'Escape') { onClose(); return; }
+      if (ke.key !== 'Tab') return;
+      if (ke.shiftKey && document.activeElement === first) {
+        ke.preventDefault();
+        last?.focus();
+      } else if (!ke.shiftKey && document.activeElement === last) {
+        ke.preventDefault();
+        first?.focus();
+      }
+    };
+    overlay.addEventListener('keydown', trap);
+    return () => {
+      overlay.removeEventListener('keydown', trap);
+      if (lastFocused.current && document.body.contains(lastFocused.current)) {
+        lastFocused.current.focus();
+      }
+    };
+  }, [step, onClose]);
+
+  useEffect(() => {
+    let cancelled = false;
     (async () => {
-      if (!user) { setStep('done'); return; }
+      if (!user) { if (!cancelled) setStep('done'); return; }
 
       const localProg = localStorage.getItem('clinical-program-tracker');
       const localChecks = localStorage.getItem('clinical-program-checkins');
       const hasLocalData = !!(localProg || localChecks);
-      setHasLocal(hasLocalData);
+      if (!cancelled) setHasLocal(hasLocalData);
 
       const cloudData = await getHasCloudData(user.id);
+      if (cancelled) return;
       setHasCloud(cloudData);
 
       if (!hasLocalData && !cloudData) {
         setStep('done');
       } else if (!hasLocalData && cloudData) {
         await pullFromCloud(user.id);
-        setStep('done');
-        onComplete();
-      } else if (hasLocalData && !cloudData) {
-        setStep('choose');
+        if (!cancelled) { setStep('done'); onComplete(); }
       } else {
-        setStep('choose');
+        if (!cancelled) setStep('choose');
       }
     })();
-  });
+    return () => { cancelled = true; };
+  }, [user, onComplete]);
 
   const handlePush = async () => {
     if (!user) return;
@@ -71,10 +106,10 @@ export default function DataImportModal({ onClose, onComplete }: DataImportModal
   if (step === 'done') return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 safe-area-inset-bottom">
+    <div ref={overlayRef} className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 safe-area-inset-bottom" role="dialog" aria-modal="true" aria-labelledby="data-sync-title" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}>
       <div className="bg-surface rounded-[var(--radius-lg)] border border-border w-full max-w-sm shadow-xl">
         <div className="px-5 py-4 border-b border-border">
-          <h2 className="font-heading text-base font-semibold text-text">Data Sync</h2>
+          <h2 id="data-sync-title" className="font-heading text-base font-semibold text-text">Data Sync</h2>
         </div>
 
         <div className="px-5 py-4">

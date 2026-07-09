@@ -123,11 +123,15 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
     tick(performance.now());
     const onVisibility = () => { if (!document.hidden) tick(performance.now()); };
     document.addEventListener('visibilitychange', onVisibility);
-    return () => { cancelAnimationFrame(rafId); document.removeEventListener('visibilitychange', onVisibility); };
+    return () => {
+      if (typeof rafId !== 'undefined') cancelAnimationFrame(rafId);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
   const handleCheckIn = (groupId: string, date: string, notes: string, signature: string | null) => {
     const alreadyCheckedIn = hasCheckIn(groupId, date);
+    const group = groups.find(g => g.id === groupId) ?? null;
     addCheckIn(groupId, date, notes, signature);
     if (!alreadyCheckedIn) {
       setGroups(prev => {
@@ -137,7 +141,6 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
         saveProgram(updated);
         return updated;
       });
-      const group = groups.find(g => g.id === groupId);
       addToast(`Checked in: ${group ? group.name : groupId}`, () => {
         handleCheckOut(groupId);
       });
@@ -171,7 +174,8 @@ export default function Dashboard({ darkMode, onToggleDark }: DashboardProps) {
     a.href = url;
     a.download = `recovery-tracker-export-${getToday()}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    // Revoke after a short delay to ensure download has been initiated in all browsers
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     addToast('Data exported successfully');
   };
 

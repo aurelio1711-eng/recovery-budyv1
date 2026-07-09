@@ -61,7 +61,9 @@ export default function BulkCheckIn({ groups, onSubmit, onClose }: BulkCheckInPr
     overlay.addEventListener('keydown', trap);
     return () => {
       overlay.removeEventListener('keydown', trap);
-      lastFocused.current?.focus();
+      if (lastFocused.current && document.body.contains(lastFocused.current)) {
+        lastFocused.current.focus();
+      }
     };
   }, [onClose]);
 

@@ -188,7 +188,7 @@ export default function MobileLayout({
             className={`flex-1 flex flex-col items-center gap-0.5 py-3 text-xs font-medium bg-transparent border-none cursor-pointer relative transition-colors duration-150 touch-target ${activeTab === tab.id ? 'text-primary' : 'text-text-muted'}`}
             onClick={() => setActiveTab(tab.id)}
           >
-            <span aria-hidden="true">{typeof tab.icon === 'function' ? <tab.icon /> : tab.icon}</span>
+            <span aria-hidden="true"><tab.icon /></span>
             <span>{tab.label}</span>
             {activeTab === tab.id && (
               <m.div

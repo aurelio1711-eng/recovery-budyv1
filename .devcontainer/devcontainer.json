@@ -1,5 +1,8 @@
 {
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "name": "Recovery Buddy",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
   "hostRequirements": {
     "cpus": 4
   },
@@ -10,9 +13,12 @@
     "server": "npm start"
   },
   "customizations": {
-    "codespaces": {
-      "openFiles": [
-        "src/App.jsx"
+    "vscode": {
+      "extensions": [
+        "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "github.vscode-github-actions"
       ]
     }
   },
@@ -20,6 +26,10 @@
     "3000": {
       "label": "Application",
       "onAutoForward": "openPreview"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "notify"
     }
   },
   "forwardPorts": [3000]

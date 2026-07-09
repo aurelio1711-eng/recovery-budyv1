@@ -1,5 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 
+const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 interface SignaturePadProps {
   onSave: (dataUrl: string) => void;
   onClose: () => void;
@@ -10,6 +12,7 @@ export default function SignaturePad({ onSave, onClose }: SignaturePadProps) {
   const isDrawingRef = useRef(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const lastFocused = useRef<HTMLElement | null>(null);
 
   const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -21,6 +24,36 @@ export default function SignaturePad({ onSave, onClose }: SignaturePadProps) {
     if (e.target === e.currentTarget) {
       onClose();
     }
+  }, [onClose]);
+
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    lastFocused.current = document.activeElement as HTMLElement;
+    const focusable = overlay.querySelectorAll<HTMLElement>(FOCUSABLE);
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    first?.focus();
+
+    const trap = (e: Event) => {
+      const ke = e as KeyboardEvent;
+      if (ke.key === 'Escape') { onClose(); return; }
+      if (ke.key !== 'Tab') return;
+      if (ke.shiftKey && document.activeElement === first) {
+        ke.preventDefault();
+        last?.focus();
+      } else if (!ke.shiftKey && document.activeElement === last) {
+        ke.preventDefault();
+        first?.focus();
+      }
+    };
+    overlay.addEventListener('keydown', trap);
+    return () => {
+      overlay.removeEventListener('keydown', trap);
+      if (lastFocused.current && document.body.contains(lastFocused.current)) {
+        lastFocused.current.focus();
+      }
+    };
   }, [onClose]);
 
   useEffect(() => {

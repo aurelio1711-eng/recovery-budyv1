@@ -91,7 +91,9 @@ export default function SearchModal({ groups, onClose, onGroupSelect, onDateSele
     overlay.addEventListener('keydown', trap);
     return () => {
       overlay.removeEventListener('keydown', trap);
-      lastFocused.current?.focus();
+      if (lastFocused.current && document.body.contains(lastFocused.current)) {
+        lastFocused.current.focus();
+      }
     };
   }, [onClose]);
 

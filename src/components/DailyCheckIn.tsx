@@ -56,7 +56,9 @@ export default function DailyCheckIn({ group, onSubmit, onClose }: DailyCheckInP
     overlay.addEventListener('keydown', trap);
     return () => {
       overlay.removeEventListener('keydown', trap);
-      lastFocused.current?.focus();
+      if (lastFocused.current && document.body.contains(lastFocused.current)) {
+        lastFocused.current.focus();
+      }
     };
   }, [onClose]);
 

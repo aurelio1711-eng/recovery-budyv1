@@ -61,26 +61,6 @@ export default function PrintableReport({ groups, refreshKey = 0, onClose }: Pri
       </div>
 
       <div className="print-only">
-        <style>{`
-          @media print {
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            body * { visibility: hidden; }
-            .print-report, .print-report * { visibility: visible; }
-            .print-report { position: absolute; left: 0; top: 0; width: 100%; padding: 2rem; background: white; color: #111; }
-            .print-report h1, .print-report h2, .print-report h3 { color: #111; }
-            .print-report .text-primary { color: #0F766E !important; }
-            .print-report .text-success { color: #059669 !important; }
-            .print-report .text-muted { color: #64748B !important; }
-            .print-report .border { border-color: #E2E8F0 !important; }
-            .print-report table { width: 100%; border-collapse: collapse; }
-            .print-report th, .print-report td { border: 1px solid #E2E8F0; padding: 6px 10px; text-align: left; font-size: 0.8rem; }
-            .print-report th { background: #F1F5F9; font-weight: 600; }
-          }
-          @media screen {
-            .print-only { display: none !important; }
-          }
-        `}</style>
 
         <div className="print-report" style={{ fontFamily: 'system-ui, sans-serif', maxWidth: '800px', margin: '0 auto', color: '#111' }}>
           <div style={{ textAlign: 'center', marginBottom: '1.5rem', borderBottom: '2px solid #0F766E', paddingBottom: '1rem' }}>

@@ -21,12 +21,10 @@ function computePassState() {
 export default function PassCountdown({ refreshKey = 0 }: Props) {
   const [passState, setPassState] = useState(computePassState);
   const [justClaimed, setJustClaimed] = useState<boolean>(false);
-  const prevRefreshKey = useRef(refreshKey);
 
-  if (refreshKey !== prevRefreshKey.current) {
-    prevRefreshKey.current = refreshKey;
+  useEffect(() => {
     setPassState(computePassState());
-  }
+  }, [refreshKey]);
 
   const { daysSinceStart, daysUntilNextPass, nextPassDate, eligible, settings } = passState;
 

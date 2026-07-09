@@ -16,6 +16,14 @@ function getIntensity(count: number): string {
   return 'bg-primary/80';
 }
 
+function getIntensityLabel(count: number): string {
+  if (count === 0) return 'No check-ins';
+  if (count <= 2) return `1-2 check-ins`;
+  if (count <= 4) return `3-4 check-ins`;
+  if (count <= 6) return `5-6 check-ins`;
+  return `${count} check-ins`;
+}
+
 interface CalendarViewProps {
   refreshKey?: number;
 }
@@ -28,7 +36,7 @@ export default function CalendarView({ refreshKey = 0 }: CalendarViewProps) {
   const allCheckIns = useMemo(() => {
     const data = loadCheckIns();
     return Object.values(data);
-  }, []);
+  }, [refreshKey]);
 
   const checkInsByDate = useMemo(() => {
     const map: Record<string, CheckIn[]> = {};
@@ -109,6 +117,7 @@ export default function CalendarView({ refreshKey = 0 }: CalendarViewProps) {
                   ${isSelected ? 'bg-primary text-white' : getIntensity(count)}
                   hover:ring-1 hover:ring-primary/50`}
                 onClick={() => setSelectedDay(d)}
+                aria-label={`${format(d, 'EEEE, MMMM d, yyyy')}${inMonth ? ` — ${getIntensityLabel(count)}` : ''}`}
               >
                 <span className={`text-xs font-medium ${isSelected ? 'text-white' : ''}`}>{format(d, 'd')}</span>
                 {count > 0 && inMonth && (
@@ -121,26 +130,26 @@ export default function CalendarView({ refreshKey = 0 }: CalendarViewProps) {
           })}
         </div>
 
-        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border">
+        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border" role="list" aria-label="Check-in intensity legend">
           <span className="text-xs text-text-muted">Intensity:</span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-4 h-4 rounded-sm bg-border/50" />
+          <div className="flex items-center gap-1.5" role="listitem">
+            <span className="w-4 h-4 rounded-sm bg-border/50" aria-hidden="true" />
             <span className="text-xs text-text-muted">0</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-4 h-4 rounded-sm bg-primary/20" />
+          <div className="flex items-center gap-1.5" role="listitem">
+            <span className="w-4 h-4 rounded-sm bg-primary/20" aria-hidden="true" />
             <span className="text-xs text-text-muted">1-2</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-4 h-4 rounded-sm bg-primary/40" />
+          <div className="flex items-center gap-1.5" role="listitem">
+            <span className="w-4 h-4 rounded-sm bg-primary/40" aria-hidden="true" />
             <span className="text-xs text-text-muted">3-4</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-4 h-4 rounded-sm bg-primary/60" />
+          <div className="flex items-center gap-1.5" role="listitem">
+            <span className="w-4 h-4 rounded-sm bg-primary/60" aria-hidden="true" />
             <span className="text-xs text-text-muted">5-6</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-4 h-4 rounded-sm bg-primary/80" />
+          <div className="flex items-center gap-1.5" role="listitem">
+            <span className="w-4 h-4 rounded-sm bg-primary/80" aria-hidden="true" />
             <span className="text-xs text-text-muted">7+</span>
           </div>
         </div>

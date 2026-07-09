@@ -14,10 +14,12 @@ const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), in
 
 export default function ConfirmModal({ title, message, confirmLabel, cancelLabel, onConfirm, onCancel, variant }: Props) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  const lastFocused = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const overlay = overlayRef.current;
     if (!overlay) return;
+    lastFocused.current = document.activeElement as HTMLElement;
     const focusable = overlay.querySelectorAll<HTMLElement>(FOCUSABLE);
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
@@ -36,7 +38,12 @@ export default function ConfirmModal({ title, message, confirmLabel, cancelLabel
       }
     };
     overlay.addEventListener('keydown', trap);
-    return () => overlay.removeEventListener('keydown', trap);
+    return () => {
+      overlay.removeEventListener('keydown', trap);
+      if (lastFocused.current && document.body.contains(lastFocused.current)) {
+        lastFocused.current.focus();
+      }
+    };
   }, [onCancel]);
 
   return (

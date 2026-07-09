@@ -54,7 +54,10 @@ export async function saveProgram(userId: string, groups: Group[]): Promise<bool
     ignoreDuplicates: false,
   });
 
-  if (error) { console.error('Failed to save program:', error); return false; }
+  if (error) {
+    throw new Error(`Failed to save program: ${error.message}`);
+  }
+
   return true;
 }
 
@@ -102,7 +105,7 @@ export async function addCheckIn(
   notes: string,
   timestamp: number,
   signatureDataUrl: string | null,
-): Promise<CheckIn | null> {
+): Promise<CheckIn> {
   const tempId = crypto.randomUUID();
   let signaturePath: string | null = null;
 
@@ -124,7 +127,9 @@ export async function addCheckIn(
     .select()
     .single();
 
-  if (error) { console.error('Failed to add check-in:', error); return null; }
+  if (error || !data) {
+    throw new Error(`Failed to add check-in: ${error?.message ?? 'no data returned'}`);
+  }
 
   return {
     id: data.id,
@@ -139,13 +144,17 @@ export async function addCheckIn(
 }
 
 export async function removeCheckIn(userId: string, groupId: string, date: string): Promise<boolean> {
-  const { data: existing } = await getSupabase()
+  const { data: existing, error: loadError } = await getSupabase()
     .from('check_ins')
     .select('id, signature_path')
     .eq('user_id', userId)
     .eq('group_id', groupId)
     .eq('date', date)
     .single();
+
+  if (loadError) {
+    throw new Error(`Failed to load existing check-in: ${loadError.message}`);
+  }
 
   if (!existing) return true;
 
@@ -154,7 +163,9 @@ export async function removeCheckIn(userId: string, groupId: string, date: strin
     .delete()
     .eq('id', existing.id);
 
-  if (error) { console.error('Failed to remove check-in:', error); return false; }
+  if (error) {
+    throw new Error(`Failed to remove check-in: ${error.message}`);
+  }
 
   if (existing.signature_path) {
     getSupabase().storage.from(SIGNATURES_BUCKET).remove([existing.signature_path])
@@ -207,6 +218,9 @@ export async function saveSettings(userId: string, settings: Settings): Promise<
     ignoreDuplicates: false,
   });
 
-  if (error) { console.error('Failed to save settings:', error); return false; }
+  if (error) {
+    throw new Error(`Failed to save settings: ${error.message}`);
+  }
+
   return true;
 }
