@@ -12,7 +12,7 @@ export interface Group {
   user_id?: string;
 }
 
-export type GroupCategory = 'orientation' | 'clinical' | 'mandatory' | 'after30' | 'support' | 'other';
+export type GroupCategory = 'orientation' | 'clinical' | 'after30' | 'support' | 'other';
 
 export interface Category {
   id: GroupCategory;
