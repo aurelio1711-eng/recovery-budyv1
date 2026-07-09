@@ -24,7 +24,7 @@ export default async function handler(req: any, res: any) {
       clearTimeout(timeoutId);
     }
 
-    const data = await response.json();
+    const data = await response.json() as { message?: string };
     if (!response.ok) {
       return res.status(response.status).json({ error: data?.message || 'Failed to fetch NYC time' });
     }
