@@ -1,9 +1,18 @@
 const BASE_URL = 'https://api.api-ninjas.com/v1/timezone';
+const SHARED_SECRET_HEADER = 'x-nyc-time-secret';
+const DEVELOPMENT_SHARED_SECRET = 'development-nyc-time-secret';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  const expectedSecret = process.env.NYC_TIME_SHARED_SECRET || (process.env.NODE_ENV !== 'production' ? DEVELOPMENT_SHARED_SECRET : '');
+  const providedSecret = req.headers?.[SHARED_SECRET_HEADER] || req.headers?.[SHARED_SECRET_HEADER.toLowerCase()] || req.headers?.['X-Nyc-Time-Secret'];
+
+  if (!expectedSecret || providedSecret !== expectedSecret) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const apiKey = process.env.API_NINJAS_KEY;

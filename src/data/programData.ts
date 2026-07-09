@@ -1,44 +1,30 @@
 import { Group } from '../types';
 
-const CLINICAL_GROUPS: Group[] = [
-  { id: 'healthy-relationships', name: 'Healthy Relationships', required: 16, category: 'clinical', completed: 0 },
-  { id: 'rebt', name: 'REBT (Rational Emotive Behavior Therapy)', required: 24, category: 'clinical', completed: 0, note: 'Handwritten adjustment modifies "REBT" on the page' },
-  { id: 'cbisa', name: 'CBISA (Cognitive Behavioral Intervention Substance Abuse)', required: 24, category: 'clinical', completed: 0 },
-  { id: 'seeking-safety', name: 'Seeking Safety', required: 21, category: 'clinical', completed: 0 },
-  { id: 'living-balance', name: 'Living in Balance', required: 24, category: 'clinical', completed: 0 },
-  { id: 'relapse-prevention-rashida', name: 'Relapse Prevention (with Rashida)', required: 20, category: 'clinical', completed: 0 },
-  { id: 'transitional-skills', name: 'Transitional Skill for Recovery', required: 16, category: 'clinical', completed: 0 },
-  { id: 'spiritual-group', name: 'Spiritual Group', required: 14, category: 'clinical', completed: 0 },
-  { id: 'recovery-relapse', name: 'Recovery & Relapse', required: 16, category: 'clinical', completed: 0 },
-  { id: 'wellness-group', name: 'Wellness Group', required: 16, category: 'clinical', completed: 0 },
-];
-
 const ORIENTATION_GROUPS: Group[] = [
-  { id: 'orientation', name: 'Orientation Groups', required: 12, category: 'orientation', completed: 0 },
+  { id: 'orientation', name: 'Orientation', required: 12, category: 'orientation', completed: 0 },
 ];
 
-const MANDATORY_GROUPS: Group[] = [
-  { id: 'community-meetings', name: 'Community Meetings', required: 999, category: 'mandatory', recurring: true, completed: 0, note: 'Daily/weekly ongoing' },
-  { id: 'big-book', name: 'Big Book Study', required: 999, category: 'mandatory', recurring: true, completed: 0, note: 'Ongoing study group' },
-  { id: 'step-study', name: 'Step Study', required: 999, category: 'mandatory', recurring: true, completed: 0, note: 'Ongoing step work' },
-];
-
-const AFTER_30_DAYS: Group[] = [
-  { id: 'peer-support', name: 'Peer Support Group', required: 999, category: 'after30', recurring: true, completed: 0, note: 'Available after 30 days' },
-  { id: 'alumni-group', name: 'Alumni Group', required: 999, category: 'after30', recurring: true, completed: 0, note: 'Available after 30 days' },
+const CLINICAL_GROUPS: Group[] = [
+  { id: 'cbisa', name: 'CBISA', required: 24, category: 'clinical', completed: 0 },
+  { id: 'healthy-relationships', name: 'Healthy Relationships', required: 16, category: 'clinical', completed: 0 },
+  { id: 'rebt', name: 'REBT', required: 24, category: 'clinical', completed: 0 },
+  { id: 'living-in-balance', name: 'Living In Balance', required: 24, category: 'clinical', completed: 0 },
+  { id: 'seeking-safety', name: 'Seeking Safety', required: 21, category: 'clinical', completed: 0 },
+  { id: 'self-discovery-identity', name: 'Self Discovery & Identity', required: 24, category: 'clinical', completed: 0 },
+  { id: 'sedona-method', name: 'Sedona Method', required: 5, category: 'clinical', completed: 0 },
+  { id: 'positive-parenting', name: 'Positive Parenting', required: 8, category: 'clinical', completed: 0 },
 ];
 
 const SUPPORT_GROUPS: Group[] = [
-  { id: 'aa-na', name: 'AA/NA Meetings', required: 999, category: 'support', recurring: true, completed: 0, note: 'Daily/weekly meetings' },
-  { id: 'smart-recovery', name: 'SMART Recovery', required: 999, category: 'support', recurring: true, completed: 0, note: 'Weekly meetings' },
-  { id: 'celebrate-recovery', name: 'Celebrate Recovery', required: 999, category: 'support', recurring: true, completed: 0, note: 'Weekly meetings' },
+  { id: 'vocational', name: 'Vocational', required: 1, category: 'support', completed: 0 },
+  { id: 'career-training', name: 'Career Training', required: 3, category: 'support', completed: 0 },
+  { id: 'housing', name: 'Housing', required: 4, category: 'support', completed: 0 },
+  { id: 'employment-group', name: 'Employment Group', required: 35, category: 'support', completed: 0 },
 ];
 
 const ALL_GROUPS: Group[] = [
   ...ORIENTATION_GROUPS,
   ...CLINICAL_GROUPS,
-  ...MANDATORY_GROUPS,
-  ...AFTER_30_DAYS,
   ...SUPPORT_GROUPS,
 ];
 
