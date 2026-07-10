@@ -11,8 +11,6 @@ describe('useMediaQuery', () => {
       matches: false,
       media: query,
       onchange: null,
-      addListener: () => {},
-      removeListener: () => {},
       addEventListener: (_event: string, listener: (e: MediaQueryListEvent) => void) => {
         listeners.push(listener);
       },

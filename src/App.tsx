@@ -23,7 +23,11 @@ function AppContent() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('rb-dark-mode', String(darkMode));
+    try {
+      localStorage.setItem('rb-dark-mode', String(darkMode));
+    } catch (e) {
+      console.warn('Failed to persist dark mode preference:', e);
+    }
   }, [darkMode]);
 
   useEffect(() => {

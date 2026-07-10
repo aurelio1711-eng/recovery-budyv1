@@ -13,7 +13,7 @@ export default function useNycClock(): NycClockState {
   const [nycTime, setNycTime] = useState('');
 
   useEffect(() => {
-    initNycTime().then(setReady);
+    initNycTime().then(setReady).catch(() => setReady(false));
   }, []);
 
   useEffect(() => {
